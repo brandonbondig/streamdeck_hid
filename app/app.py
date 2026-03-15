@@ -24,6 +24,7 @@ class StreamDeckMiniApp:
         self.base_pages: dict[str, PageSpec] = {}
         self.base_directory_targets: dict[str, DirectoryTarget] = {}
         self.directory_targets: dict[str, DirectoryTarget] = {}
+        self.running_script_path: Path | None = None
         self.hid_runner = HIDScriptRunner(self.settings.hid_device)
         self.pages: dict[str, PageSpec] = {}
         self.root_page_id = root_page_id
@@ -268,6 +269,13 @@ class StreamDeckMiniApp:
     def run_hid_script(self, spec: ButtonSpec) -> None:
         assert spec.script_path is not None
 
+        with self.state_lock:
+            if self.running_script_path is not None:
+                print(f"Script already running: {self.running_script_path.name}")
+                return
+
+            self.running_script_path = spec.script_path
+
         print(f"Running HID script: {spec.script_path.name}")
         thread = threading.Thread(
             target=self.execute_hid_script,
@@ -284,6 +292,10 @@ class StreamDeckMiniApp:
             print(f"HID script failed: {exc}")
         except Exception as exc:
             print(f"Unexpected HID script error for {script_path.name}: {exc}")
+        finally:
+            with self.state_lock:
+                if self.running_script_path == script_path:
+                    self.running_script_path = None
 
     def manual_refresh(self) -> None:
         changed = self.refresh_sources(force=True)
