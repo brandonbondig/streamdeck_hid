@@ -11,6 +11,7 @@ DEFAULT_HID_DEVICE = "/dev/hidg0"
 DEFAULT_SCRIPT_EXTENSIONS = (".txt", ".hid", ".ducky")
 DEFAULT_SOURCE_REFRESH_SECONDS = 2.0
 DEFAULT_USB_SCAN_DEPTH = 2
+DEFAULT_USB_IGNORE_NAMES: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -22,6 +23,7 @@ class Settings:
     source_refresh_seconds: float
     usb_mount_root: Path | None
     usb_scan_depth: int
+    usb_ignore_names: tuple[str, ...]
 
 
 def load_settings() -> Settings:
@@ -39,6 +41,10 @@ def load_settings() -> Settings:
         os.environ.get("STREAMDECK_USB_SCAN_DEPTH"),
         DEFAULT_USB_SCAN_DEPTH,
     )
+    usb_ignore_names = parse_name_list(
+        os.environ.get("STREAMDECK_USB_IGNORE_NAMES"),
+        DEFAULT_USB_IGNORE_NAMES,
+    )
 
     return Settings(
         env_file=env_file,
@@ -48,6 +54,7 @@ def load_settings() -> Settings:
         source_refresh_seconds=source_refresh_seconds,
         usb_mount_root=usb_mount_root,
         usb_scan_depth=usb_scan_depth,
+        usb_ignore_names=usb_ignore_names,
     )
 
 
@@ -172,3 +179,15 @@ def parse_positive_int(value: str | None, default: int) -> int:
         return default
 
     return parsed if parsed > 0 else default
+
+
+def parse_name_list(value: str | None, default: tuple[str, ...]) -> tuple[str, ...]:
+    if value is None:
+        return default
+
+    items = tuple(
+        item.strip().lower()
+        for item in value.split(",")
+        if item.strip()
+    )
+    return items or default

@@ -52,6 +52,7 @@ STREAMDECK_SCRIPT_EXTENSIONS=.txt,.hid,.ducky
 STREAMDECK_SOURCE_REFRESH_SECONDS=2
 STREAMDECK_USB_MOUNT_ROOT=/media/pi
 STREAMDECK_USB_SCAN_DEPTH=2
+STREAMDECK_USB_IGNORE_NAMES=
 ```
 
 Environment variables:
@@ -62,6 +63,7 @@ Environment variables:
 - `STREAMDECK_SOURCE_REFRESH_SECONDS`: how often the app rescans sources
 - `STREAMDECK_USB_MOUNT_ROOT`: mount root that contains USB volumes, for example `/Volumes` on macOS or `/media/pi` on Raspberry Pi OS
 - `STREAMDECK_USB_SCAN_DEPTH`: how deep to search for mount candidates when the mount root is not a flat directory like `/Volumes`
+- `STREAMDECK_USB_IGNORE_NAMES`: optional comma-separated USB volume names to hide, for example `Tails`
 - `STREAMDECK_ENV_FILE`: optional path to a different env file; defaults to `.env`
 
 ## Folder Layout

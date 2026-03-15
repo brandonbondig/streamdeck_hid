@@ -48,8 +48,10 @@ class StreamDeckMiniApp:
         try:
             print(f"Connected to {self.deck.deck_type()} ({describe_layout(self.deck)})")
             print(f"Serial: {self.get_serial_number()}")
+            print(f"Settings file: {self.settings.env_file or 'not found'}")
             print(f"HID device: {self.settings.hid_device}")
             print(f"HID script directory: {self.settings.script_dir}")
+            print(f"USB mount root: {self.settings.usb_mount_root or 'disabled'}")
             print(self.usb_status_text())
             print(f"Indexed {len(self.hid_scripts)} local HID script(s)")
             print_help(self.current_page)
