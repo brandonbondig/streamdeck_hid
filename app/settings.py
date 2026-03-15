@@ -4,6 +4,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_ENV_FILE = ".env"
 DEFAULT_SCRIPT_DIR = "./hid_scripts"
 DEFAULT_HID_DEVICE = "/dev/hidg0"
@@ -25,14 +26,15 @@ class Settings:
 
 def load_settings() -> Settings:
     env_file = load_default_env_file()
-    script_dir = Path(os.environ.get("STREAMDECK_SCRIPT_DIR", DEFAULT_SCRIPT_DIR)).expanduser()
-    hid_device = Path(os.environ.get("STREAMDECK_HID_DEVICE", DEFAULT_HID_DEVICE)).expanduser()
+    base_dir = env_file.parent if env_file is not None else PROJECT_ROOT
+    script_dir = resolve_setting_path(os.environ.get("STREAMDECK_SCRIPT_DIR", DEFAULT_SCRIPT_DIR), base_dir)
+    hid_device = resolve_setting_path(os.environ.get("STREAMDECK_HID_DEVICE", DEFAULT_HID_DEVICE), base_dir)
     script_extensions = parse_script_extensions(os.environ.get("STREAMDECK_SCRIPT_EXTENSIONS"))
     source_refresh_seconds = parse_positive_float(
         os.environ.get("STREAMDECK_SOURCE_REFRESH_SECONDS"),
         DEFAULT_SOURCE_REFRESH_SECONDS,
     )
-    usb_mount_root = parse_optional_path(os.environ.get("STREAMDECK_USB_MOUNT_ROOT"))
+    usb_mount_root = parse_optional_path(os.environ.get("STREAMDECK_USB_MOUNT_ROOT"), base_dir)
     usb_scan_depth = parse_positive_int(
         os.environ.get("STREAMDECK_USB_SCAN_DEPTH"),
         DEFAULT_USB_SCAN_DEPTH,
@@ -40,11 +42,11 @@ def load_settings() -> Settings:
 
     return Settings(
         env_file=env_file,
-        script_dir=script_dir.resolve(),
+        script_dir=script_dir,
         hid_device=hid_device,
         script_extensions=script_extensions,
         source_refresh_seconds=source_refresh_seconds,
-        usb_mount_root=usb_mount_root.resolve() if usb_mount_root is not None else None,
+        usb_mount_root=usb_mount_root,
         usb_scan_depth=usb_scan_depth,
     )
 
@@ -54,12 +56,12 @@ def load_default_env_file() -> Path | None:
     if not env_value:
         return None
 
-    env_path = Path(env_value).expanduser()
-    if not env_path.exists():
+    env_path = resolve_env_file_path(env_value)
+    if env_path is None:
         return None
 
     load_env_file(env_path)
-    return env_path.resolve()
+    return env_path
 
 
 def load_env_file(path: Path) -> None:
@@ -102,7 +104,7 @@ def parse_script_extensions(value: str | None) -> tuple[str, ...]:
     return tuple(extensions or DEFAULT_SCRIPT_EXTENSIONS)
 
 
-def parse_optional_path(value: str | None) -> Path | None:
+def parse_optional_path(value: str | None, base_dir: Path) -> Path | None:
     if value is None:
         return None
 
@@ -110,7 +112,34 @@ def parse_optional_path(value: str | None) -> Path | None:
     if not cleaned:
         return None
 
-    return Path(cleaned).expanduser()
+    return resolve_path_value(cleaned, base_dir)
+
+
+def resolve_setting_path(value: str, base_dir: Path) -> Path:
+    return resolve_path_value(value, base_dir)
+
+
+def resolve_path_value(value: str, base_dir: Path) -> Path:
+    path = Path(value).expanduser()
+    if not path.is_absolute():
+        path = base_dir / path
+
+    return path.resolve()
+
+
+def resolve_env_file_path(value: str) -> Path | None:
+    env_path = Path(value).expanduser()
+    candidates = [env_path]
+
+    if not env_path.is_absolute():
+        candidates.append(PROJECT_ROOT / env_path)
+
+    for candidate in candidates:
+        resolved = candidate.resolve()
+        if resolved.exists():
+            return resolved
+
+    return None
 
 
 def parse_positive_float(value: str | None, default: float) -> float:
