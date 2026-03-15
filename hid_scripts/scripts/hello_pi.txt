@@ -1,0 +1,5 @@
+# label: HELLO
+# description: Type "hello from pi" and press Enter
+# color: 30,140,210
+STRING hello from pi
+ENTER
